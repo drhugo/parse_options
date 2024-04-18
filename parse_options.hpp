@@ -55,7 +55,9 @@ namespace parse_options
       }
 
       const std::string& name() const { return name_; }
+
       const std::string& description() const { return description_; }
+
     protected:
 
       OptionRecord( const std::string_view& name, const std::string_view& description, bool has_parameter ) :
@@ -208,10 +210,11 @@ namespace parse_options
           {
             const char* pp = argv[ii];
             size_t plen = std::strlen( pp );
-            int pi = 0;   // parameter index
 
             if( 0 < plen )
               {
+                int pi = 0;   // parameter index
+
                 if( pp[0] == '-' )    // this is an option
                   {
                     pi = 1;
@@ -265,6 +268,7 @@ namespace parse_options
       /// @Method: non_option_args
       /// @returns A vector contained all of the parameters not used as options
       const std::vector<std::string>& non_option_args() const { return non_option_args_; }
+
       const std::string usage() const
       {
         std::string u_str = description_ + "\n\nOPTIONS:\n\n";
@@ -274,20 +278,20 @@ namespace parse_options
         for( const auto& one : option_ )
           {
             u_str.append( "  --" );
-            u_str.append( one->name() );
+            u_str.append( one->name());
 
-            int num_align = break_col - ( one->name().length() + 4 );
+            int num_align = break_col - (one->name().length() + 4);
             if( 0 < num_align )
               {
                 u_str.append( num_align, ' ' );
               }
-              else
+            else
               {
                 u_str.append( "\n" );
                 u_str.append( break_col, ' ' );
               }
-              u_str.append( one->description() );
-              u_str.append( "\n" );
+            u_str.append( one->description());
+            u_str.append( "\n" );
           }
 
         return u_str;
