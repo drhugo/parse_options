@@ -15,6 +15,7 @@ struct programOptions
   std::filesystem::path input;
   std::filesystem::path output;
   std::vector<std::string> source;    // the source files
+  int integer{0};
 };
 
 /* ----------------------------------------------------------------------------
@@ -29,47 +30,56 @@ int process_test( const programOptions& options, const std::string_view& file_pa
 
   return 0;
 }
+
 /* ----------------------------------------------------------------------------
  * main
 ---------------------------------------------------------------------------- */
 int main( int argc, char* argv[] )
 {
   programOptions options;
-  parse_options::OptionParser parser( "This is the test framework for the option parser");
+  parse_options::OptionParser parser( "This is the test framework for the option parser" );
 
   parser.add( "verbose", "Print semi-useful stuff", &options.verbose );
   parser.add( "input_path", "The path to read information from", &options.input );
   parser.add( "output_path", "The path to write data to", &options.output );
+  parser.add( "real_long_option_name", "This option has a lot of text to test wrapping", &options.integer );
 
   int status = 0;
 
-  try
+  if( 1 < argc )
     {
-      parser.parse( argc, argv );
-
-      // If we didn't throw, then out options were parsed correctly.
-
-      for( const auto& one : parser.non_option_args() )
+      try
         {
-          status = process_test( options, one );
+          parser.parse( argc, argv );
 
-          if( status != 0 ) break;
+          // If we didn't throw, then out options were parsed correctly.
+
+          for( const auto& one : parser.non_option_args())
+            {
+              status = process_test( options, one );
+
+              if( status != 0 ) break;
+            }
+        }
+
+      catch( std::invalid_argument& e1 )
+        {
+          std::cerr << "# Failed to parse program options\n";
+          std::cerr << "# " << e1.what();
+
+          status = 1;
+        }
+
+      catch( const std::exception& e2 )
+        {
+          std::cerr << "ERROR: " << e2.what() << "\n";
+
+          status = 2;
         }
     }
-
-  catch( std::invalid_argument& e1 )
+  else
     {
-      std::cerr << "# Failed to parse program options\n";
-      std::cerr << "# " << e1.what();
-
-      status = 1;
-    }
-
-  catch( const std::exception& e2 )
-    {
-      std::cerr << "ERROR: " << e2.what() << "\n";
-
-      status = 2;
+      std::cout << parser.usage().c_str();
     }
 
   return status;

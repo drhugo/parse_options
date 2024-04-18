@@ -54,6 +54,8 @@ namespace parse_options
         return (name_.compare( 0, arg_str.size(), arg_str.data()) == 0);
       }
 
+      const std::string& name() const { return name_; }
+      const std::string& description() const { return description_; }
     protected:
 
       OptionRecord( const std::string_view& name, const std::string_view& description, bool has_parameter ) :
@@ -91,8 +93,6 @@ namespace parse_options
       ValueOption( const std::string_view& name, const std::string_view& description, T* dst_ptr ) :
         OptionRecord( name, description, not std::is_same<bool, T>::value ), dst_ptr_( dst_ptr ) {};
 
-      ~ValueOption() {};
-
       void parse( const char* value ) override
       {
         if( value )
@@ -117,7 +117,10 @@ namespace parse_options
               {
                 if( num_read == 1 )
                   {
-                    *dst_ptr_ = parsed_value;
+                    if( dst_ptr_ )    // If this is null, the client wants us to silently ignore this parameter
+                      {
+                        *dst_ptr_ = parsed_value;
+                      }
                   }
                 else if( 1 < num_read )
                   {
@@ -151,17 +154,11 @@ namespace parse_options
       SwitchOption( const std::string_view& opt_name, const std::string_view& description, bool* dst_ptr ) :
         ValueOption<bool>( opt_name, description, dst_ptr ) {}
 
-      ~SwitchOption() {}
-
-      void parse( const char* param )
+      void parse( const char* /* param */ ) override
       {
-        if( param == nullptr )
+        if( dst_ptr_ )
           {
             *dst_ptr_ = true;
-          }
-        else
-          {
-            // we should never reach this case here
           }
       }
   };
@@ -169,7 +166,7 @@ namespace parse_options
   class OptionParser
   {
     public:
-      OptionParser( const std::string_view& description = "" ) : description_( description ) {}
+      explicit OptionParser( const std::string_view& description = "" ) : description_( description ) {}
 
       ~OptionParser()
       {
@@ -268,6 +265,33 @@ namespace parse_options
       /// @Method: non_option_args
       /// @returns A vector contained all of the parameters not used as options
       const std::vector<std::string>& non_option_args() const { return non_option_args_; }
+      const std::string usage() const
+      {
+        std::string u_str = description_ + "\n\nOPTIONS:\n\n";
+
+        const int break_col = 20;
+
+        for( const auto& one : option_ )
+          {
+            u_str.append( "  --" );
+            u_str.append( one->name() );
+
+            int num_align = break_col - ( one->name().length() + 4 );
+            if( 0 < num_align )
+              {
+                u_str.append( num_align, ' ' );
+              }
+              else
+              {
+                u_str.append( "\n" );
+                u_str.append( break_col, ' ' );
+              }
+              u_str.append( one->description() );
+              u_str.append( "\n" );
+          }
+
+        return u_str;
+      }
 
     protected:
 

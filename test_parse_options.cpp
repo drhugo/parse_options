@@ -57,7 +57,7 @@ class cli_helper
 /* ----------------------------------------------------------------------------
  * Test Cases
 ---------------------------------------------------------------------------- */
-TEST_CASE( "Parse Boolean" )
+TEST_CASE( "Simple Integration Test" )
 {
   struct booleanOptionRecord
   {
@@ -75,7 +75,7 @@ TEST_CASE( "Parse Boolean" )
   CHECK( booleanOption.option == true );
 
   REQUIRE( parser.non_option_args().size() == 1 );
-  CHECK( parser.non_option_args().at(0) == "ignored" );
+  CHECK( parser.non_option_args().at( 0 ) == "ignored" );
 }
 
 TEST_CASE( "Partial Name Matching" )
@@ -233,7 +233,7 @@ TEST_CASE( "Check Errors" )
 
       CHECK_THROWS_WITH( parser.parse( 3, argv ), doctest::Contains( "too many arguments" ));
     }
-  SUBCASE( "missing argument" )
+  SUBCASE( "missing arguments" )
     {
       parser.add( "integer", "An option that takes one and only one integer", &testOptions.int_value );
 
@@ -242,6 +242,49 @@ TEST_CASE( "Check Errors" )
       argv[1] = "--integer";
       argv[2] = "";
 
-      CHECK_THROWS_WITH( parser.parse( 3, argv ), doctest::Contains( "empty value string" ));
+      SUBCASE( "empty string" )
+        {
+          CHECK_THROWS_WITH( parser.parse( 3, argv ), doctest::Contains( "empty value string" ));
+        }
+
+      SUBCASE( "missing argument" )
+        {
+          // notice argc = 2 here, so the last parameter passed is '--integer'
+          CHECK_THROWS_WITH( parser.parse( 2, argv ), doctest::Contains( "missing argument" ));
+        }
     }
+  SUBCASE( "ignore option value" )
+    {
+      parser.add<int>( "integer", "An option that consumes and argument but is ignored", nullptr );
+      parser.add<bool>( "missing_bool", "An option where the value  should be silently ignored", nullptr );
+
+      cli_helper ch( "program --integer 1 --missing_bool" );
+
+      CHECK_NOTHROW( parser.parse( ch.argc(), ch.argv()));
+    }
+}
+
+TEST_CASE( "Check Usage" )
+{
+  struct
+  {
+    bool one;
+    bool two;
+    bool three;
+  } testOption;
+
+  parse_options::OptionParser parser( "Tool description" );
+  parser.add( "one", "This is the first option", &testOption.one );
+  parser.add( "two", "This is the second option", &testOption.two );
+  parser.add( "twenty_letters_long", "This is the third option", &testOption.three );
+
+  std::string usage = parser.usage();
+  std::string expected( "Tool description\n\n"
+                        "OPTIONS:\n\n"
+                        "  --one             This is the first option\n"
+                        "  --two             This is the second option\n"
+                        "  --twenty_letters_long\n"
+                        "                    This is the third option\n" );
+
+  CHECK( usage == expected );
 }
