@@ -279,12 +279,10 @@ TEST_CASE( "Check Usage" )
   parser.add( "twenty_letters_long", "This is the third option", &testOption.three );
 
   std::string usage = parser.usage();
-  std::string expected( "Tool description\n\n"
+  CHECK( usage ==       "Tool description\n\n"
                         "OPTIONS:\n\n"
                         "  --one             This is the first option\n"
                         "  --two             This is the second option\n"
                         "  --twenty_letters_long\n"
                         "                    This is the third option\n" );
-
-  CHECK( usage == expected );
 }
